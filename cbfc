@@ -41,9 +41,9 @@ echo $search_response | jq -c '.aaData[]' | while read item; do
     # 
     # 61 - English
     # 44 - Hindi
-    if [[ $langid != "61" && $langid != "44" ]]; then
-        continue
-    fi
+    # if [[ $langid != "61" && $langid != "44" ]]; then
+    #     continue
+    # fi
     echo -e "#${srno}\t - [$langid] ${mname}"
 done
 read -p "Enter serial number of movie: " srno
