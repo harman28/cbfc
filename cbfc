@@ -58,8 +58,10 @@ mid=$(echo $movie | jq -r '.m_id')
 mname=$(echo $movie | jq -r '.m_name')
 langid=$(echo $movie | jq -r '.l_id')
 
+mkdir -p /tmp/cbfc
+
 # Redirect the response to a local file
 curl --silent --data-urlencode "src_title=${mname}" -d "movie_id=${mid}&lang_id=${langid}&src_lang=&src_dt1=&src_dt2=" \
-    'https://www.cbfcindia.gov.in/main/search-result' > "/tmp/${mname}.html"
+    'https://www.cbfcindia.gov.in/main/search-result' > "/tmp/cbfc/${mname}.html"
 
-open "/tmp/${mname}.html"
+open "/tmp/cbfc/${mname}.html"
