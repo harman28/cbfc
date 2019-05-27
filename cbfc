@@ -1,0 +1,65 @@
+#!/bin/bash
+#
+# - Call the useless search and show the useless results
+# - Take input and open page for that movie
+
+function indexed_array_contains() {
+  local e match="$1"
+  shift
+  for e; do
+    [[ "$e" == "$match" ]] && return 0
+  done
+  return 1
+}
+
+search_query=$*
+
+# Other params need to be there for some reason
+# The grep is there because there's sometimes some kachra at the top of this response
+search_response=$(curl --silent -G --data-urlencode "title=${search_query}" --data 'lang1=&dt1=&dt2=&_=1' \
+                    "https://www.cbfcindia.gov.in/main/search_page_call.php" | grep iTotalRecords)
+
+# Annoying for a user to have to scroll through 300 results
+length=$(echo $search_response | jq '.aaData | length')
+if (( length > 300 ))
+then
+    echo "More than 300 results, yeh nahi hoga mujhse"
+    exit 1
+fi
+
+# Search sucks, so display all result and ask user to select a number
+echo $search_response | jq -c '.aaData[]' | while read item; do
+
+    srno=$(jq -r '.srno' <<< "$item")
+    mname=$(jq -r '.m_name' <<< "$item")
+    langid=$(jq -r '.l_id' <<< "$item")
+
+    # Filter out languages you don't want
+    # Without this, searach results tend to be too massive to read
+    # TODO: 
+    # Add a way for the user to configure valid langs rather than hardcoding them
+    # 
+    # 61 - English
+    # 44 - Hindi
+    if [[ $langid != "61" && $langid != "44" ]]; then
+        continue
+    fi
+    echo -e "#${srno}\t - [$langid] ${mname}"
+done
+read -p "Enter serial number of movie: " srno
+
+# Movies are 0-indexed
+((srno--))
+movie=$(echo $search_response | jq -r ".aaData[$srno]")
+
+# Pull out the details needed for the next request
+srno=$(echo $movie | jq -r '.srno')
+mid=$(echo $movie | jq -r '.m_id')
+mname=$(echo $movie | jq -r '.m_name')
+langid=$(echo $movie | jq -r '.l_id')
+
+# Redirect the response to a local file
+curl --silent --data-urlencode "src_title=${mname}" -d "movie_id=${mid}&lang_id=${langid}&src_lang=&src_dt1=&src_dt2=" \
+    'https://www.cbfcindia.gov.in/main/search-result' > "/tmp/${mname}.html"
+
+open "/tmp/${mname}.html"
